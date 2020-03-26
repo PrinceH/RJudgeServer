@@ -1,0 +1,11 @@
+version: "3"
+services: 
+    judge_server:
+        image: hanweizhe/judge_server:1.1
+        tmpfs: 
+            - /tmp
+        volumes: 
+            - $PWD/JudgeServer:/JudgeServer
+        ports: 
+            - "0.0.0.0:12358:9501"
+        tty: true
