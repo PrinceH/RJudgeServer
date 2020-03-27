@@ -2,18 +2,12 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7415bbb1-ff71-4433-bf64-123f4611f7bf" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/Constants/JudgeResult.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/JudgeServer.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/JudgeServer.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/Compiler.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/Compiler.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/JudgeService.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/JudgeService.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/Server.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/Server.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.cpp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/result.log" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -59,14 +53,15 @@
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/test_cases" />
-    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+    <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
   </component>
   <component name="RecentsManager">
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/test_cases/YgsMY4IPG9BJATVRie4GaEM2MYOoowVF" />
-    </key>
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/test_cases" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/app/Constants" />
+      <recent name="$PROJECT_DIR$/test_cases/YgsMY4IPG9BJATVRie4GaEM2MYOoowVF" />
     </key>
   </component>
   <component name="RunManager">
@@ -103,7 +98,8 @@
       <updated>1585197470435</updated>
       <workItem from="1585197474353" duration="1354000" />
       <workItem from="1585198881467" duration="18000" />
-      <workItem from="1585274079044" duration="14901000" />
+      <workItem from="1585274079044" duration="15128000" />
+      <workItem from="1585301328891" duration="6702000" />
     </task>
     <servers />
   </component>
@@ -119,11 +115,12 @@
       <screen x="0" y="23" width="1335" height="809" />
     </state>
     <state x="422" y="148" key="#Docker2/0.23.1335.809@0.23.1335.809" timestamp="1585200531338" />
-    <state x="176" y="86" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1585198753206">
-      <screen x="0" y="23" width="1335" height="807" />
+    <state x="176" y="86" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1585323149364">
+      <screen x="0" y="23" width="1335" height="810" />
     </state>
     <state x="176" y="86" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.23.1335.807@0.23.1335.807" timestamp="1585198753206" />
     <state x="176" y="86" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.23.1335.809@0.23.1335.809" timestamp="1585197759511" />
+    <state x="176" y="86" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.23.1335.810@0.23.1335.810" timestamp="1585323149364" />
     <state x="410" y="225" key="#com.intellij.fileTypes.FileTypeChooser" timestamp="1585290227710">
       <screen x="0" y="23" width="1335" height="810" />
     </state>
@@ -145,14 +142,14 @@
       <screen x="0" y="23" width="1335" height="807" />
     </state>
     <state x="444" y="186" key="FileChooserDialogImpl/0.23.1335.807@0.23.1335.807" timestamp="1585198027680" />
-    <state x="221" y="63" key="SettingsEditor" timestamp="1585274491196">
-      <screen x="0" y="23" width="1335" height="802" />
+    <state x="193" y="76" key="SettingsEditor" timestamp="1585323113364">
+      <screen x="0" y="23" width="1335" height="810" />
     </state>
     <state x="221" y="63" key="SettingsEditor/0.23.1335.802@0.23.1335.802" timestamp="1585274491196" />
     <state x="221" y="63" key="SettingsEditor/0.23.1335.804@0.23.1335.804" timestamp="1585201124724" />
     <state x="221" y="63" key="SettingsEditor/0.23.1335.807@0.23.1335.807" timestamp="1585198398708" />
     <state x="221" y="63" key="SettingsEditor/0.23.1335.809@0.23.1335.809" timestamp="1585200460761" />
-    <state x="221" y="63" key="SettingsEditor/0.23.1335.810@0.23.1335.810" timestamp="1585228609868" />
+    <state x="193" y="76" key="SettingsEditor/0.23.1335.810@0.23.1335.810" timestamp="1585323113364" />
     <state x="221" y="63" key="SettingsEditor/0.23.1335.812@0.23.1335.812" timestamp="1585227488389" />
     <state x="474" y="147" key="com.jetbrains.plugins.remotesdk.ui.RemoteMappingsConfiguration" timestamp="1585227487761">
       <screen x="0" y="23" width="1335" height="812" />

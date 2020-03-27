@@ -2,3 +2,6 @@ submissions/
 test_cases/
 redis_data/
 app/__pycache__/
+app/Constants/ResultCode.py
+app/Constants/__pycache__/
+

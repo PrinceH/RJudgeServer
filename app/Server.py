@@ -1,9 +1,11 @@
 # -*- coding:utf-8 -*-
+import psutil
 import websocket
 import queue
 import redis
 import json
 import sys
+import socket
 import os
 import signal
 import time
@@ -43,11 +45,25 @@ def on_open(ws):
                     max_memory=data["max_memory"],
                     max_cpu_time=data["max_cpu_time"]
                 )
-                print(judger._run())
+                # data = judger._run()
+                # print(data[0]["result"])
+                ws.send(json.dumps(judger._run()))
     thread.start_new_thread(run, ())
 
-if __name__ == "__main__":
 
+def getMemCpu():
+    data = psutil.virtual_memory()
+    total = data.total  # 总内存,单位为byte
+    print('total', total)
+    free = data.available  # 可用内存
+    print('free', free)
+
+    memory = "Memory usage:%d" % (int(round(data.percent))) + "%" + " "  # 内存使用情况
+    print('memory', memory)
+    cpu = "CPU:%0.2f" % psutil.cpu_percent(interval=1) + "%"  # CPU占用情况
+    print('cpu', cpu)
+if __name__ == "__main__":
+    # while True:
     websocket.enableTrace(True)
     ws = websocket.WebSocketApp("ws://{}/websocket/judge".format(os.getenv("SERVER_ADDRESS")),
                               on_message = on_message,

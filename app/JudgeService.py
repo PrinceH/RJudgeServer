@@ -11,8 +11,8 @@ from Compiler import Compiler
 from Compiler import CompilerException
 import requests
 import zipfile
-import time
-
+from Constants.ResultCode import ResultCode
+from Constants.JudgeResult import JudgeResult
 class JudgeServiceException(Exception):
     def __init__(self, message):
         super().__init__()
@@ -27,7 +27,7 @@ def read_file_content(path):
         return file.read()
 
 
-def _generate_test_case_output_md5(output_content):
+def _generate_output_md5(output_content):
     output_content = output_content.rstrip()
     stripped_output_content = output_content.replace("\n", "").replace(" ", "")
     return hashlib.md5(output_content.rstrip().encode("utf-8")).hexdigest(), hashlib.md5(
@@ -70,7 +70,7 @@ class JudgeService:
                 raise JudgeServiceException(message="[ERROR] Missing test samples")
             input_content = read_file_content(path=input_file)
             output_content = read_file_content(path=output_file)
-            output_md5_data = _generate_test_case_output_md5(output_file)
+            output_md5_data = _generate_output_md5(output_content)
             item_info = {"input_name": os.path.basename(input_file), "input_size": len(input_content),
                          "output_name": os.path.basename(output_file), "output_size": len(output_content),
                          "output_md5": output_md5_data[0],
@@ -80,11 +80,46 @@ class JudgeService:
         info["test_case_number"] = index
         return info
 
-    def _generate_judge_result(self):
-        pass
+    def _generate_judge_result(self,run_result,user_output_path,test_case_info):
+        result = {}
+        status = ret = ResultCode.Accepted
+        user_output_content = read_file_content(user_output_path)
+        user_output_size = len(user_output_content)
+        user_output_md5,user_stripped_output_md5 = _generate_output_md5(user_output_content)
+        print("md5 ",user_output_md5, test_case_info["output_md5"])
+        print("stripped_output_md5",user_stripped_output_md5,test_case_info["stripped_output_md5"])
+        if run_result["result"] == JudgeResult.SUCCESS:
+            if user_output_md5 != test_case_info["output_md5"] and user_stripped_output_md5 != test_case_info["stripped_output_md5"]:
+                print("WA")
+                status = ret = ResultCode.WRONG_ANSWER
+            elif user_output_md5 != test_case_info["output_md5"] and user_stripped_output_md5 == test_case_info["stripped_output_md5"]:
+                status = ret = ResultCode.PRESENTATION_ERROR
+                print("PE")
+        elif run_result["result"] == JudgeResult.MEMORY_LIMIT_EXCEEDED:
+            ret = ResultCode.MEMORY_LIMIT_EXCEEDED
+        elif run_result["result"] == JudgeResult.CPU_TIME_LIMIT_EXCEEDED:
+            ret = ResultCode.CPU_TIME_LIMIT_EXCEEDED
+        elif run_result["result"] == JudgeResult.REAL_TIME_LIMIT_EXCEEDED:
+            ret = ResultCode.REAL_TIME_LIMIT_EXCEEDED
+        elif run_result["result"] == JudgeResult.RUNTIME_ERROR:
+            ret = ResultCode.RUNTIME_ERROR
+            if user_output_size > test_case_info["max_output_size"]:
+                ret = ResultCode.Output_Limit_Exceeded
+        elif run_result["result"] == JudgeResult.SYSTEM_ERROR:
+            ret = ResultCode.SYSTEM_ERROR
 
-    def __genrate_judge_all_result_(self):
-        pass
+        result["result"] = ret
+        result["status"] = status
+        result["expected_output_size"] = test_case_info["output_size"]
+        result["user_output_size"] = user_output_size
+        result["expected_output_content"] = test_case_info["expected_output_content"]
+        result["user_output_content"] = user_output_content
+        result["user_output_md5"] = user_output_md5
+        result["user_stripped_output_md5"] = user_stripped_output_md5
+        result["expected_output_md5"] = test_case_info["output_md5"]
+        result["expected_stripped_output_md5"] = test_case_info["stripped_output_md5"]
+        result["Judge_Result"] = run_result
+        return result
 
     def _once(self, test_case_id):
         # print(self._test_case_id_info["test_cases"][0])
@@ -112,7 +147,9 @@ class JudgeService:
             max_output_size=max_output_size,
             uid=0, gid=0, seccomp_rule_name="c_cpp",
         )
-        return run_result
+        test_case_info["max_output_size"] = max_output_size
+        test_case_info["expected_output_content"] = expected_output_content
+        return self._generate_judge_result(run_result=run_result,user_output_path = user_output_path,test_case_info = test_case_info)
 
     def _download_latest_test_case(self):
         print("update........")
