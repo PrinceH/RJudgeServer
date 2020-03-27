@@ -1,11 +1,24 @@
 version: "3"
-services: 
+services:
+    redis:
+        image: 'redis:5.0.3'
+        restart: always
+        hostname: redis
+        container_name: redis
+        command: redis-server /usr/local/etc/redis/redis.conf
+        volumes:
+            - ./redis_config/redis.conf:/usr/local/etc/redis/redis.conf
+            - ./redis_data/:/data/
     judge_server:
         image: hanweizhe/judge_server:1.1
+        depends_on:
+          - redis
         tmpfs: 
             - /tmp
         volumes: 
-            - $PWD/JudgeServer:/JudgeServer
+            - $PWD/:/JudgeServer
+        environment:
+            - SERVER_ADDRESS=192.168.31.129:9501
         ports: 
             - "0.0.0.0:12358:9501"
         tty: true
