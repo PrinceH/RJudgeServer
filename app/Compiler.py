@@ -31,8 +31,8 @@ class Compiler:
         with open(self._src_path, "w") as file:
             file.write(self._src)
 
-    # def __del__(self):
-    #     # shutil.rmtree(self._submission_id_path)
+    def __del__(self):
+        shutil.rmtree(self._submission_id_path)
 
     def _run(self):
         max_compile_time = int(self._compile_config["max_compile_time"] / 1000)

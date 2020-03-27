@@ -56,7 +56,6 @@ class JudgeService:
                                                                        exe_dir=os.path.dirname(self._exe_path),
                                                                        max_memory=int(self._max_memory / 1024)).split(
             " ")
-        print(self._command)
         if not os.path.exists(self._test_case_path):
             os.mkdir(self._test_case_path)
         if not os.path.exists(self._submission_path):
@@ -89,13 +88,10 @@ class JudgeService:
 
     def _once(self, test_case_id):
         # print(self._test_case_id_info["test_cases"][0])
-        print(self._command[0])
         test_case_info = self._test_case_id_info["test_cases"][test_case_id]
         input_path = os.path.join(self._test_case_id_path, test_case_info["input_name"])
-        print(input_path)
         output_path = os.path.join(self._test_case_id_path, test_case_info["output_name"])
         user_output_path = os.path.join(self._submission_path, self._submission_id, test_case_info["output_name"])
-        print(user_output_path)
         expected_output_content = read_file_content(output_path)
         expected_output_size = len(expected_output_content)
         if expected_output_size >= int(1024 * 1024 * 0.5):
@@ -123,7 +119,7 @@ class JudgeService:
         zip_path = os.path.join(self._test_case_path, self._test_case_id) + ".zip"
         if os.path.exists(zip_path):
             os.remove(zip_path)
-        r = requests.get(url="http://192.168.31.129:9501/download/test_cases/{}".format(self._test_case_id))
+        r = requests.get(url="http://{}/download/test_cases/{}".format(os.getenv("SERVER_ADDRESS"),self._test_case_id))
         if r.status_code == 200:
             with open(zip_path, "wb") as file:
                 file.write(r.content)
@@ -142,13 +138,15 @@ class JudgeService:
         # 没有测试样例直接下载
         if not os.path.exists(self._test_case_id_path):
             self._download_latest_test_case()
-        res = json.loads(requests.get(url="http://192.168.31.129:9501/test_cases/{}".format(self._test_case_id)).text)
+        res = json.loads(requests.get(url="http://{}/test_cases/{}".format(os.getenv("SERVER_ADDRESS"),self._test_case_id)).text)
         latest_time = res["updated_at"]
         cur_time = os.path.getctime(os.path.join(self._test_case_id_path, "touch"))
         if latest_time - cur_time > 0:
             self._download_latest_test_case()
 
     def _run(self):
+        if os.path.exists(self._submission_id_path) :
+            shutil.rmtree(self._submission_id_path)
         compiler = Compiler(
             compile_config=self._language_config["compile"],
             src=self._src,

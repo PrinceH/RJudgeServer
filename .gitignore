@@ -1,2 +1,4 @@
 submissions/
 test_cases/
+redis_data/
+app/__pycache__/
