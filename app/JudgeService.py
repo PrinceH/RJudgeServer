@@ -14,9 +14,10 @@ import zipfile
 from Constants.ResultCode import ResultCode
 from Constants.JudgeResult import JudgeResult
 class JudgeServiceException(Exception):
-    def __init__(self, message):
+    def __init__(self, message,reason=""):
         super().__init__()
         self.message = message
+        self.reason = reason
 
     def __str__(self):
         return self.message
@@ -27,10 +28,10 @@ def read_file_content(path):
         return file.read()
 
 
-def _generate_output_md5(output_content):
+def _generate_output_sha256(output_content):
     output_content = output_content.rstrip()
     stripped_output_content = output_content.replace("\n", "").replace(" ", "")
-    return hashlib.md5(output_content.rstrip().encode("utf-8")).hexdigest(), hashlib.md5(
+    return hashlib.sha256(output_content.rstrip().encode("utf-8")).hexdigest(), hashlib.sha256(
         stripped_output_content.encode("utf-8")).hexdigest()
 
 
@@ -54,8 +55,7 @@ class JudgeService:
         self._pool = Pool(processes=psutil.cpu_count())
         self._command = self._language_config["run"]["command"].format(exe_path=self._exe_path,
                                                                        exe_dir=os.path.dirname(self._exe_path),
-                                                                       max_memory=int(self._max_memory / 1024)).split(
-            " ")
+                                                                       max_memory=int(self._max_memory / 1024)).split(" ")
         if not os.path.exists(self._test_case_path):
             os.mkdir(self._test_case_path)
         if not os.path.exists(self._submission_path):
@@ -70,14 +70,16 @@ class JudgeService:
                 raise JudgeServiceException(message="[ERROR] Missing test samples")
             input_content = read_file_content(path=input_file)
             output_content = read_file_content(path=output_file)
-            output_md5_data = _generate_output_md5(output_content)
+            output_sha256_data = _generate_output_sha256(output_content)
             item_info = {"input_name": os.path.basename(input_file), "input_size": len(input_content),
                          "output_name": os.path.basename(output_file), "output_size": len(output_content),
-                         "output_md5": output_md5_data[0],
-                         "stripped_output_md5": output_md5_data[1]}
+                         "output_sha256": output_sha256_data[0],
+                         "stripped_output_sha256": output_sha256_data[1]}
             info["test_cases"][index] = item_info
             index += 1
         info["test_case_number"] = index
+        if index == 0:
+            raise JudgeServiceException("NoTestSamples")
         return info
 
     def _generate_judge_result(self,run_result,user_output_path,test_case_info):
@@ -85,25 +87,19 @@ class JudgeService:
         status = ret = ResultCode.Accepted
         user_output_content = read_file_content(user_output_path)
         user_output_size = len(user_output_content)
-        user_output_md5,user_stripped_output_md5 = _generate_output_md5(user_output_content)
-        print("md5 ",user_output_md5, test_case_info["output_md5"])
-        print("stripped_output_md5",user_stripped_output_md5,test_case_info["stripped_output_md5"])
+        user_output_sha256,user_stripped_output_sha256 = _generate_output_sha256(user_output_content)
         if run_result["result"] == JudgeResult.SUCCESS:
-            if user_output_md5 != test_case_info["output_md5"] and user_stripped_output_md5 != test_case_info["stripped_output_md5"]:
-                print("WA")
+            if user_output_sha256 != test_case_info["output_sha256"] and user_stripped_output_sha256 != test_case_info["stripped_output_sha256"]:
                 status = ret = ResultCode.WRONG_ANSWER
-            elif user_output_md5 != test_case_info["output_md5"] and user_stripped_output_md5 == test_case_info["stripped_output_md5"]:
+            elif user_output_sha256 != test_case_info["output_sha256"] and user_stripped_output_sha256 == test_case_info["stripped_output_sha256"]:
                 status = ret = ResultCode.PRESENTATION_ERROR
-                print("PE")
         elif run_result["result"] == JudgeResult.MEMORY_LIMIT_EXCEEDED:
             ret = ResultCode.MEMORY_LIMIT_EXCEEDED
-        elif run_result["result"] == JudgeResult.CPU_TIME_LIMIT_EXCEEDED:
-            ret = ResultCode.CPU_TIME_LIMIT_EXCEEDED
-        elif run_result["result"] == JudgeResult.REAL_TIME_LIMIT_EXCEEDED:
-            ret = ResultCode.REAL_TIME_LIMIT_EXCEEDED
+        elif run_result["result"] == JudgeResult.CPU_TIME_LIMIT_EXCEEDED or run_result["result"] == JudgeResult.REAL_TIME_LIMIT_EXCEEDED:
+            ret = ResultCode.TIME_LIMIT_EXCEEDED
         elif run_result["result"] == JudgeResult.RUNTIME_ERROR:
             ret = ResultCode.RUNTIME_ERROR
-            if user_output_size > test_case_info["max_output_size"]:
+            if user_output_size >= test_case_info["max_output_size"]:
                 ret = ResultCode.Output_Limit_Exceeded
         elif run_result["result"] == JudgeResult.SYSTEM_ERROR:
             ret = ResultCode.SYSTEM_ERROR
@@ -114,25 +110,21 @@ class JudgeService:
         result["user_output_size"] = user_output_size
         result["expected_output_content"] = test_case_info["expected_output_content"]
         result["user_output_content"] = user_output_content
-        result["user_output_md5"] = user_output_md5
-        result["user_stripped_output_md5"] = user_stripped_output_md5
-        result["expected_output_md5"] = test_case_info["output_md5"]
-        result["expected_stripped_output_md5"] = test_case_info["stripped_output_md5"]
+        result["user_output_sha256"] = user_output_sha256
+        result["user_stripped_output_sha256"] = user_stripped_output_sha256
+        result["expected_output_sha256"] = test_case_info["output_sha256"]
+        result["expected_stripped_output_sha256"] = test_case_info["stripped_output_sha256"]
         result["Judge_Result"] = run_result
         return result
 
     def _once(self, test_case_id):
-        # print(self._test_case_id_info["test_cases"][0])
         test_case_info = self._test_case_id_info["test_cases"][test_case_id]
         input_path = os.path.join(self._test_case_id_path, test_case_info["input_name"])
         output_path = os.path.join(self._test_case_id_path, test_case_info["output_name"])
         user_output_path = os.path.join(self._submission_path, self._submission_id, test_case_info["output_name"])
         expected_output_content = read_file_content(output_path)
         expected_output_size = len(expected_output_content)
-        if expected_output_size >= int(1024 * 1024 * 0.5):
-            max_output_size = int(expected_output_size * 1.2)
-        else:
-            max_output_size = 700
+        max_output_size = int(expected_output_size * 1.5)
         run_result = _judger.run(
             exe_path=self._command[0],
             input_path=input_path,
@@ -141,11 +133,12 @@ class JudgeService:
             max_cpu_time=max(1000, self._max_cpu_time),
             max_real_time=max(2000, self._max_cpu_time * 3),
             max_memory=self._max_memory,
-            args=[], env=[], log_path=os.path.join(os.getcwd(), "judge.log"),
+            args=self._command[1::], env=[], log_path=os.path.join(os.getcwd(), "judge.log"),
             max_process_number=-1,
             max_stack=128 * 1024 * 1024,
             max_output_size=max_output_size,
-            uid=0, gid=0, seccomp_rule_name="c_cpp",
+            uid=0, gid=0, seccomp_rule_name=self._language_config["run"]['seccomp_rule'],
+            memory_limit_check_only=self._language_config["run"].get("memory_limit_check_only", 0),
         )
         test_case_info["max_output_size"] = max_output_size
         test_case_info["expected_output_content"] = expected_output_content
@@ -156,7 +149,7 @@ class JudgeService:
         zip_path = os.path.join(self._test_case_path, self._test_case_id) + ".zip"
         if os.path.exists(zip_path):
             os.remove(zip_path)
-        r = requests.get(url="http://{}/download/test_cases/{}".format(os.getenv("SERVER_ADDRESS"),self._test_case_id))
+        r = requests.get(url="http://{}/download/test_cases/{}".format(os.getenv("SERVER_URL"),self._test_case_id))
         if r.status_code == 200:
             with open(zip_path, "wb") as file:
                 file.write(r.content)
@@ -164,18 +157,21 @@ class JudgeService:
             zip_list = zip_file.namelist()
             if os.path.exists(self._test_case_id_path):
                 shutil.rmtree(self._test_case_id_path)
-            for f in zip_list:
-                zip_file.extract(f, self._test_case_id_path)
+            for _file in zip_list:
+                zip_file.extract(_file, self._test_case_id_path)
             zip_file.close()
             os.remove(zip_path)
         else:
-            raise JudgeServiceException("update failed")
+            raise JudgeServiceException("UpdateTestCaseFailed",r.__str__())
 
     def _get_latest_test_case(self):
         # 没有测试样例直接下载
         if not os.path.exists(self._test_case_id_path):
             self._download_latest_test_case()
-        res = json.loads(requests.get(url="http://{}/test_cases/{}".format(os.getenv("SERVER_ADDRESS"),self._test_case_id)).text)
+        try:
+            res = json.loads(requests.get(url="http://{}/test_cases/{}".format(os.getenv("SERVER_URL"),self._test_case_id)).text)
+        except requests.RequestException as e:
+            raise JudgeServiceException("GetRemoteTestCaseInfoFailed",e.__str__())
         latest_time = res["updated_at"]
         cur_time = os.path.getctime(os.path.join(self._test_case_id_path, "touch"))
         if latest_time - cur_time > 0:
@@ -193,16 +189,13 @@ class JudgeService:
             compiler._run()
         except CompilerException as e:
             return {"error": e.message, "reason": e.reason}
-        self._get_latest_test_case()
         try:
+            self._get_latest_test_case()
             self._test_case_id_info = self._generate_test_case_info()
-            # print(json.dumps(self.test_case_id_info))
         except JudgeServiceException as e:
-            print(e)
+            return {"error": e.message, "reason": e.reason}
         tmp_result = []
         result = []
-        if self._test_case_id_info["test_case_number"] == 0:
-            raise JudgeServiceException("No test samples")
         for i in range(self._test_case_id_info["test_case_number"]):
             tmp_result.append(self._pool.apply_async(run, (self, i)))
         self._pool.close()
@@ -268,4 +261,5 @@ return 0;
         max_memory=1024 * 1024 * 32,
         max_cpu_time=1000
     )
-    print(judger._run())
+    with open("./ret.json","w+") as f:
+        f.write(json.dumps(judger._run()))

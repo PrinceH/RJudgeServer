@@ -1,17 +1,15 @@
 # -*- coding:utf-8 -*-
 import psutil
 import websocket
-import queue
 import redis
 import json
-import sys
 import socket
 import os
-import signal
 import time
-import pickle
+
 from JudgeService import JudgeService
 re = redis.Redis(host='redis', port=6379, db=1,password="admin123")
+queue_name = "{}_judge".format(socket.gethostname())
 try:
     import thread
 except ImportError:
@@ -19,15 +17,14 @@ except ImportError:
 def on_message(ws, message):
     global re
     data = json.loads(message)
-    if data["type"] == "submission":
+    if data["type"] == "judge":
         print("{} There are new submissions".format(data["submission_id"]))
-        re.lpush("judge",json.dumps(data))
-    elif data["type"] == "query_task_number":
-        ws.send(json.dumps({"task_number":re.llen("judge")}))
+        re.lpush(queue_name,json.dumps(data))
 def on_error(ws, error):
     print(error)
 
 def on_close(ws):
+    print(ws)
     print("### closed ###")
 
 def on_open(ws):
@@ -35,8 +32,8 @@ def on_open(ws):
         global re
         time.sleep(1)
         while True:
-            if re.llen("judge") > 0:
-                data = json.loads(re.lpop("judge").decode())
+            if re.llen(queue_name) > 0:
+                data = json.loads(re.rpop(queue_name).decode())
                 judger = JudgeService(
                     language_config=data["language_config"],
                     test_case_id=data["test_case_id"],
@@ -45,29 +42,28 @@ def on_open(ws):
                     max_memory=data["max_memory"],
                     max_cpu_time=data["max_cpu_time"]
                 )
-                # data = judger._run()
-                # print(data[0]["result"])
-                ws.send(json.dumps(judger._run()))
+                ws.send(json.dumps({'type':'judging','hostname': socket.gethostname(), 'judge_status_id': data['judge_status_id']}))
+                result = {'type': "judged", 'judge_status_id': data['judge_status_id'], 'judge_info': judger._run(),'hostname': socket.gethostname()}
+                ws.send(json.dumps(result))
+            if re.llen(queue_name) == 0:
+                time.sleep(1)
+
+    def heartbeat(*args):
+        m = psutil.virtual_memory()
+        while True:
+            body = {"type":"heartbeat","hostname":socket.gethostname(),"token":"12345","task_number":re.llen("judge"),"cpu_usage":psutil.cpu_percent(interval=1),"memory_usage":m.percent,"cpu_core":psutil.cpu_count()}
+            ws.send(json.dumps(body))
+            time.sleep(5)
     thread.start_new_thread(run, ())
+    thread.start_new_thread(heartbeat,())
 
-
-def getMemCpu():
-    data = psutil.virtual_memory()
-    total = data.total  # 总内存,单位为byte
-    print('total', total)
-    free = data.available  # 可用内存
-    print('free', free)
-
-    memory = "Memory usage:%d" % (int(round(data.percent))) + "%" + " "  # 内存使用情况
-    print('memory', memory)
-    cpu = "CPU:%0.2f" % psutil.cpu_percent(interval=1) + "%"  # CPU占用情况
-    print('cpu', cpu)
 if __name__ == "__main__":
-    # while True:
-    websocket.enableTrace(True)
-    ws = websocket.WebSocketApp("ws://{}/websocket/judge".format(os.getenv("SERVER_ADDRESS")),
+    # websocket.enableTrace(True)
+    print(os.getenv("WEB_SOCKET_URL"))
+    print(os.getenv("SERVER_URL"))
+    ws = websocket.WebSocketApp("{}".format(os.getenv("WEB_SOCKET_URL")),
                               on_message = on_message,
                               on_error = on_error,
                               on_close = on_close)
     ws.on_open = on_open
-    thread.start_new_thread(ws.run_forever(), ())
+    ws.run_forever()

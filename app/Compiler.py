@@ -22,7 +22,7 @@ class Compiler:
         self._exe_path = os.path.join(self._submission_id_path, self._compile_config["exe_name"])
         self._src_path = os.path.join(self._submission_id_path, self._compile_config["src_name"])
         self._command = self._compile_config["compile_command"].format(src_path=self._src_path,
-                                                                       exe_dir=self._submission_path,
+                                                                       exe_dir=self._submission_id_path,
                                                                        exe_path=self._exe_path)
         if not os.path.exists(self._submission_path):
             os.mkdir(self._submission_path)

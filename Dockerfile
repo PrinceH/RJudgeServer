@@ -3,6 +3,11 @@ FROM ubuntu:16.04
 # #install python
 RUN apt-get update && apt-get install -y python python3.5 python-dev python3-pip python-pip python-pkg-resources python3-pkg-resources
 RUN pip install --upgrade pip && pip3 install  websocket_client psutil requests redis
+COPY ./sources.list /etc/apt/sources.list
+# 安装jdk
+RUN apt-get update && apt-get install -y openjdk-8-jdk
+
+COPY ./java_policy /etc
 # #安装基本组件
 RUN apt-get install -y git curl gcc g++ cmake git libseccomp-dev zip unzip
 # #编译judger沙盒

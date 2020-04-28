@@ -9,16 +9,24 @@ services:
         volumes:
             - ./redis_config/redis.conf:/usr/local/etc/redis/redis.conf
             - ./redis_data/:/data/
-    judge_server:
-        image: hanweizhe/judge_server:1.1
+    judge_server1:
+        image: hwz634473223/judge_server:1.2
+        restart: always
+        cap_drop:
+            - SETPCAP
+            - MKNOD
+            - NET_BIND_SERVICE
+            - SYS_CHROOT
+            - SETFCAP
+            - FSETID
         depends_on:
           - redis
-        tmpfs: 
+        tmpfs:
             - /tmp
         volumes: 
-            - $PWD/:/JudgeServer
-        environment:
-            - SERVER_ADDRESS=192.168.31.129:9501
-        ports: 
-            - "0.0.0.0:12358:9501"
+            - ./test_cases:/JudgeServer/test_case
+            - ./submissions:/JudgeServer/submissions
+            - ./setting.json:/JudgeServer/app/setting.json
+        working_dir: "/JudgeServer"
+        entrypoint: ["python3","app/Server.py"]
         tty: true
