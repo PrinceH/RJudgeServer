@@ -10,7 +10,7 @@ services:
             - ./redis_config/redis.conf:/usr/local/etc/redis/redis.conf
             - ./redis_data/:/data/
     judge_server1:
-        image: hwz634473223/judge_server:1.2
+        image: hwz634473223/judge_server
         restart: always
         cap_drop:
             - SETPCAP
@@ -24,9 +24,11 @@ services:
         tmpfs:
             - /tmp
         volumes: 
-            - ./test_cases:/JudgeServer/test_case
+            - ./test_cases:/JudgeServer/test_cases
             - ./submissions:/JudgeServer/submissions
             - ./setting.json:/JudgeServer/app/setting.json
-        working_dir: "/JudgeServer"
-        entrypoint: ["python3","app/Server.py"]
+        environment:
+            - WEB_SOCKET_URL=ws://api.nwanna.cn:801/websocket/judge
+            - TOKEN=12345
+            - SERVER_URL=nwanna.cn
         tty: true
