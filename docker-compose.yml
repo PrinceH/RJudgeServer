@@ -3,14 +3,14 @@ services:
     redis:
         image: 'redis:5.0.3'
         restart: always
-        hostname: redis
-        container_name: redis
+        hostname: redis1
+        container_name: redis1
         command: redis-server /usr/local/etc/redis/redis.conf
         volumes:
             - ./redis_config/redis.conf:/usr/local/etc/redis/redis.conf
             - ./redis_data/:/data/
-    judge_server1:
-        image: hwz634473223/judge_server
+    judge_server2:
+        image: hwz634473223/judge_server:local
         restart: always
         cap_drop:
             - SETPCAP
@@ -24,11 +24,9 @@ services:
         tmpfs:
             - /tmp
         volumes: 
-            - ./test_cases:/JudgeServer/test_cases
-            - ./submissions:/JudgeServer/submissions
-            - ./setting.json:/JudgeServer/app/setting.json
+            - $PWD:/RJudgeServer/
         environment:
-            - WEB_SOCKET_URL=ws://api.nwanna.cn:801/websocket/judge
+            - WEB_SOCKET_URL=ws://192.168.31.129:9502/websocket/judge
             - TOKEN=12345
-            - SERVER_URL=nwanna.cn
+            - SERVER_URL=192.168.31.129:9501
         tty: true

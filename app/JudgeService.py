@@ -74,12 +74,14 @@ class JudgeService:
             item_info = {"input_name": os.path.basename(input_file), "input_size": len(input_content),
                          "output_name": os.path.basename(output_file), "output_size": len(output_content),
                          "output_sha256": output_sha256_data[0],
-                         "stripped_output_sha256": output_sha256_data[1]}
+                         "stripped_output_sha256": output_sha256_data[1],
+                         "test_case_name": input_file.replace(self._test_case_id_path + '/', "").replace(".in","")
+                         }
             info["test_cases"][index] = item_info
             index += 1
         info["test_case_number"] = index
         if index == 0:
-            raise JudgeServiceException("NoTestSamples")
+            raise JudgeServiceException(message="[ERROR] The number of test samples is zero")
         return info
 
     def _generate_judge_result(self,run_result,user_output_path,test_case_info):
@@ -114,6 +116,7 @@ class JudgeService:
         result["user_stripped_output_sha256"] = user_stripped_output_sha256
         result["expected_output_sha256"] = test_case_info["output_sha256"]
         result["expected_stripped_output_sha256"] = test_case_info["stripped_output_sha256"]
+        result["test_case_name"] = test_case_info["test_case_name"]
         result["Judge_Result"] = run_result
         return result
 
@@ -195,13 +198,13 @@ class JudgeService:
         except JudgeServiceException as e:
             return {"error": e.message, "reason": e.reason}
         tmp_result = []
-        result = []
+        result = {}
         for i in range(self._test_case_id_info["test_case_number"]):
             tmp_result.append(self._pool.apply_async(run, (self, i)))
         self._pool.close()
         self._pool.join()
         for item in tmp_result:
-            result.append(item.get())
+            result[item.get()['test_case_name']] = item.get()
         return result
 
     def __getstate__(self):
@@ -225,7 +228,7 @@ if __name__ == "__main__":
         }
     }
     cpp_src = r"""
-     # include<bits/stdc++.h>
+     #include<bits/stdc++.h>
     using
     namespace
     std;
@@ -255,7 +258,7 @@ return 0;
 }"""
     judger = JudgeService(
         language_config=cpp_lang_config,
-        test_case_id="YgsMY4IPG9BJATVRie4GaEM2MYOoowVF",
+        test_case_id="6Lf7h13icaiHMbMtnKIZWGUgh9jzDKap",
         submission_id="1",
         src=cpp_src,
         max_memory=1024 * 1024 * 32,
