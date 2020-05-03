@@ -2,6 +2,6 @@ submissions/
 test_cases/
 redis_data/
 /.idea/
-*/__pycache__/*
+__pycache__
 ret.json
-
+.Ds_Store

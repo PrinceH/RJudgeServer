@@ -1,6 +1,6 @@
+# -*- coding: utf-8 -*-
 import os
 import shutil
-
 
 class CompilerException(Exception):
     def __init__(self, message, reason=""):
@@ -28,18 +28,16 @@ class Compiler:
             os.mkdir(self._submission_path)
         if not os.path.exists(self._submission_id_path):
             os.mkdir(self._submission_id_path)
-        with open(self._src_path, "w") as file:
+        with open(self._src_path, "w", encoding="utf-8") as file:
             file.write(self._src)
 
     def __del__(self):
         shutil.rmtree(self._submission_id_path)
-
     def _run(self):
         max_compile_time = int(self._compile_config["max_compile_time"] / 1000)
-        code = os.system(
-            "timeout {} ".format(max_compile_time) + self._command + " 2> " + os.path.join(self._submission_id_path,
-                                                                                           "error.log"))
-        with open(os.path.join(self._submission_id_path, "error.log"), "r") as error:
+        cmd =  "timeout {} ".format(max_compile_time) + self._command + " 2> " + os.path.join(self._submission_id_path,"compile_error.log")
+        code = os.system(cmd)
+        with open(os.path.join(self._submission_id_path, "compile_error.log"), "r") as error:
             error_content = error.read()
             error_content = error_content.replace(self._submission_id_path, "")
         if code:

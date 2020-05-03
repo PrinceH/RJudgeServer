@@ -40,10 +40,12 @@ def on_open(ws):
                     submission_id=data["submission_id"],
                     src=data["src"],
                     max_memory=data["max_memory"],
-                    max_cpu_time=data["max_cpu_time"]
+                    max_cpu_time=data["max_cpu_time"],
+                    is_spj=data['is_spj']
                 )
                 ws.send(json.dumps({'type':'judging','hostname': socket.gethostname(), 'judge_status_id': data['judge_status_id']}))
                 result = {'type': "judged", 'judge_status_id': data['judge_status_id'], 'judge_info': judger._run(),'hostname': socket.gethostname()}
+                print('send')
                 ws.send(json.dumps(result))
             if re.llen(queue_name) == 0:
                 time.sleep(1)
@@ -59,6 +61,7 @@ def on_open(ws):
 
 if __name__ == "__main__":
     # websocket.enableTrace(True)
+    print(psutil.cpu_count())
     print(os.getenv("WEB_SOCKET_URL"))
     print(os.getenv("SERVER_URL"))
     ws = websocket.WebSocketApp("{}".format(os.getenv("WEB_SOCKET_URL")),

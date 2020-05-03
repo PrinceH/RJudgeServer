@@ -12,13 +12,6 @@ services:
     judge_server2:
         image: hwz634473223/judge_server:local
         restart: always
-        cap_drop:
-            - SETPCAP
-            - MKNOD
-            - NET_BIND_SERVICE
-            - SYS_CHROOT
-            - SETFCAP
-            - FSETID
         depends_on:
           - redis
         tmpfs:
@@ -29,4 +22,6 @@ services:
             - WEB_SOCKET_URL=ws://192.168.31.129:9502/websocket/judge
             - TOKEN=12345
             - SERVER_URL=192.168.31.129:9501
+        working_dir: "/RJudgeServer"
+#        entrypoint: ["python3","app/Server.py"]
         tty: true

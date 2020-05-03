@@ -40,7 +40,7 @@ def run(judger, id):
 
 
 class JudgeService:
-    def __init__(self, language_config, test_case_id, submission_id, src, max_cpu_time, max_memory):
+    def __init__(self, language_config, test_case_id, submission_id, src, max_cpu_time, max_memory,is_spj = False):
         self._src = src
         self._max_cpu_time = max_cpu_time
         self._test_case_id = test_case_id
@@ -51,6 +51,8 @@ class JudgeService:
         self._test_case_id_path = os.path.join(self._test_case_path, test_case_id)
         self._language_config = language_config
         self._max_memory = max_memory
+        self._is_spj = is_spj
+        self._spj_path = os.path.join(self._test_case_id_path,'spj.cpp')
         self._exe_path = os.path.join(self._submission_id_path, self._language_config["compile"]["exe_name"])
         self._pool = Pool(processes=psutil.cpu_count())
         self._command = self._language_config["run"]["command"].format(exe_path=self._exe_path,
@@ -85,32 +87,42 @@ class JudgeService:
         return info
 
     def _generate_judge_result(self,run_result,user_output_path,test_case_info):
+        print("result: ",run_result["result"])
         result = {}
         status = ret = ResultCode.Accepted
         user_output_content = read_file_content(user_output_path)
         user_output_size = len(user_output_content)
         user_output_sha256,user_stripped_output_sha256 = _generate_output_sha256(user_output_content)
-        if run_result["result"] == JudgeResult.SUCCESS:
+        if not self._is_spj and run_result["result"] == JudgeResult.SUCCESS:
             if user_output_sha256 != test_case_info["output_sha256"] and user_stripped_output_sha256 != test_case_info["stripped_output_sha256"]:
                 status = ret = ResultCode.WRONG_ANSWER
             elif user_output_sha256 != test_case_info["output_sha256"] and user_stripped_output_sha256 == test_case_info["stripped_output_sha256"]:
                 status = ret = ResultCode.PRESENTATION_ERROR
-        elif run_result["result"] == JudgeResult.MEMORY_LIMIT_EXCEEDED:
+        if run_result["result"] == JudgeResult.MEMORY_LIMIT_EXCEEDED:
             ret = ResultCode.MEMORY_LIMIT_EXCEEDED
-        elif run_result["result"] == JudgeResult.CPU_TIME_LIMIT_EXCEEDED or run_result["result"] == JudgeResult.REAL_TIME_LIMIT_EXCEEDED:
-            ret = ResultCode.TIME_LIMIT_EXCEEDED
-        elif run_result["result"] == JudgeResult.RUNTIME_ERROR:
+        if run_result["result"] == JudgeResult.REAL_TIME_LIMIT_EXCEEDED or run_result["result"] == JudgeResult.REAL_TIME_LIMIT_EXCEEDED:
+                ret = ResultCode.TIME_LIMIT_EXCEEDED
+        if run_result["result"] == JudgeResult.RUNTIME_ERROR:
             ret = ResultCode.RUNTIME_ERROR
-            if user_output_size >= test_case_info["max_output_size"]:
+            if not self._is_spj and user_output_size >= test_case_info["max_output_size"]:
                 ret = ResultCode.Output_Limit_Exceeded
-        elif run_result["result"] == JudgeResult.SYSTEM_ERROR:
+        if run_result["result"] == JudgeResult.SYSTEM_ERROR:
             ret = ResultCode.SYSTEM_ERROR
 
         result["result"] = ret
+        if self._is_spj and ret == ResultCode.Accepted:
+            code = run_result['code']
+            if run_result == JudgeResult.SUCCESS:
+                if code == 0:
+                    ret = ResultCode.Accepted
+                if code == 1:
+                    ret = ResultCode.WRONG_ANSWER
+                if code == 256:
+                    ret = ResultCode.RUNTIME_ERROR
+                result['result'] = ret
         result["status"] = status
         result["expected_output_size"] = test_case_info["output_size"]
         result["user_output_size"] = user_output_size
-        result["expected_output_content"] = test_case_info["expected_output_content"]
         result["user_output_content"] = user_output_content
         result["user_output_sha256"] = user_output_sha256
         result["user_stripped_output_sha256"] = user_stripped_output_sha256
@@ -119,7 +131,6 @@ class JudgeService:
         result["test_case_name"] = test_case_info["test_case_name"]
         result["Judge_Result"] = run_result
         return result
-
     def _once(self, test_case_id):
         test_case_info = self._test_case_id_info["test_cases"][test_case_id]
         input_path = os.path.join(self._test_case_id_path, test_case_info["input_name"])
@@ -128,21 +139,27 @@ class JudgeService:
         expected_output_content = read_file_content(output_path)
         expected_output_size = len(expected_output_content)
         max_output_size = int(expected_output_size * 1.5)
+        if self._is_spj:
+            max_output_size = -1
         run_result = _judger.run(
             exe_path=self._command[0],
             input_path=input_path,
             output_path=user_output_path,
-            error_path=user_output_path,
-            max_cpu_time=max(1000, self._max_cpu_time),
-            max_real_time=max(2000, self._max_cpu_time * 3),
+            error_path=os.path.join(self._submission_path, self._submission_id,'error.log'),
+            max_cpu_time=self._max_cpu_time,
+            max_real_time=self._max_cpu_time*60,
             max_memory=self._max_memory,
             args=self._command[1::], env=[], log_path=os.path.join(os.getcwd(), "judge.log"),
             max_process_number=-1,
-            max_stack=128 * 1024 * 1024,
+            max_stack=32 * 1024 * 1024,
             max_output_size=max_output_size,
             uid=0, gid=0, seccomp_rule_name=self._language_config["run"]['seccomp_rule'],
             memory_limit_check_only=self._language_config["run"].get("memory_limit_check_only", 0),
         )
+        if self._is_spj:
+            cmd = "timeout 30 {} {} {} {}".format(self._spj_exe,input_path,output_path,user_output_path)
+            code = os.system(cmd)
+            run_result['code'] = code
         test_case_info["max_output_size"] = max_output_size
         test_case_info["expected_output_content"] = expected_output_content
         return self._generate_judge_result(run_result=run_result,user_output_path = user_output_path,test_case_info = test_case_info)
@@ -195,6 +212,18 @@ class JudgeService:
         try:
             self._get_latest_test_case()
             self._test_case_id_info = self._generate_test_case_info()
+        except JudgeServiceException as e:
+            return {"error": e.message, "reason": e.reason}
+        try:
+            if self._is_spj:
+                cmd = "timeout 10 /usr/bin/g++ -std=c++11 {} -o {} 2> {}".format(self._spj_path,os.path.join(self._submission_id_path,"spj"),os.path.join(self._submission_id_path,'spj_error.log'))
+                code = os.system(cmd)
+                if code:
+                    with open(os.path.join(self._submission_id_path, "spj_error.log"), "r") as error:
+                        error_content = error.read()
+                        error_content = error_content.replace(self._submission_id_path, "")
+                    raise JudgeServiceException("Spj Compile error", error_content)
+                self._spj_exe = os.path.join(self._submission_id_path,'spj')
         except JudgeServiceException as e:
             return {"error": e.message, "reason": e.reason}
         tmp_result = []
