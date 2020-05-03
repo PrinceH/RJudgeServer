@@ -117,7 +117,7 @@ class JudgeService:
                     ret = ResultCode.Accepted
                 if code == 1:
                     ret = ResultCode.WRONG_ANSWER
-                if code == 256:
+                if code == 255:
                     ret = ResultCode.RUNTIME_ERROR
                 result['result'] = ret
         result["status"] = status
