@@ -87,7 +87,6 @@ class JudgeService:
         return info
 
     def _generate_judge_result(self,run_result,user_output_path,test_case_info):
-        print("result: ",run_result["result"])
         result = {}
         status = ret = ResultCode.Accepted
         user_output_content = read_file_content(user_output_path)
@@ -100,30 +99,28 @@ class JudgeService:
                 status = ret = ResultCode.PRESENTATION_ERROR
         if run_result["result"] == JudgeResult.MEMORY_LIMIT_EXCEEDED:
             ret = ResultCode.MEMORY_LIMIT_EXCEEDED
-        if run_result["result"] == JudgeResult.REAL_TIME_LIMIT_EXCEEDED or run_result["result"] == JudgeResult.REAL_TIME_LIMIT_EXCEEDED:
+        if run_result["result"] == JudgeResult.CPU_TIME_LIMIT_EXCEEDED or run_result["result"] == JudgeResult.REAL_TIME_LIMIT_EXCEEDED:
                 ret = ResultCode.TIME_LIMIT_EXCEEDED
         if run_result["result"] == JudgeResult.RUNTIME_ERROR:
             ret = ResultCode.RUNTIME_ERROR
-            if not self._is_spj and user_output_size >= test_case_info["max_output_size"]:
-                ret = ResultCode.Output_Limit_Exceeded
+        if user_output_size >= test_case_info["max_output_size"]:
+            ret = ResultCode.Output_Limit_Exceeded
         if run_result["result"] == JudgeResult.SYSTEM_ERROR:
             ret = ResultCode.SYSTEM_ERROR
 
         result["result"] = ret
         if self._is_spj and ret == ResultCode.Accepted:
             code = run_result['code']
-            if run_result == JudgeResult.SUCCESS:
-                if code == 0:
-                    ret = ResultCode.Accepted
-                if code == 1:
-                    ret = ResultCode.WRONG_ANSWER
-                if code == 255:
-                    ret = ResultCode.RUNTIME_ERROR
-                result['result'] = ret
+            if code == 0:
+                ret = ResultCode.Accepted
+            if code == 1:
+                ret = ResultCode.WRONG_ANSWER
+            if code == 255:
+                ret = ResultCode.RUNTIME_ERROR
+        result['result'] = ret
         result["status"] = status
         result["expected_output_size"] = test_case_info["output_size"]
         result["user_output_size"] = user_output_size
-        result["user_output_content"] = user_output_content
         result["user_output_sha256"] = user_output_sha256
         result["user_stripped_output_sha256"] = user_stripped_output_sha256
         result["expected_output_sha256"] = test_case_info["output_sha256"]
@@ -138,9 +135,7 @@ class JudgeService:
         user_output_path = os.path.join(self._submission_path, self._submission_id, test_case_info["output_name"])
         expected_output_content = read_file_content(output_path)
         expected_output_size = len(expected_output_content)
-        max_output_size = int(expected_output_size * 1.5)
-        if self._is_spj:
-            max_output_size = -1
+        max_output_size = int(expected_output_size * 2)
         run_result = _judger.run(
             exe_path=self._command[0],
             input_path=input_path,
@@ -158,7 +153,7 @@ class JudgeService:
         )
         if self._is_spj:
             cmd = "timeout 30 {} {} {} {}".format(self._spj_exe,input_path,output_path,user_output_path)
-            code = os.system(cmd)
+            code = os.system(cmd) >> 8
             run_result['code'] = code
         test_case_info["max_output_size"] = max_output_size
         test_case_info["expected_output_content"] = expected_output_content
