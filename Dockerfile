@@ -1,5 +1,7 @@
 FROM debian:stable
 
+COPY ./sources.list /etc/apt/sources.list
+
 # #install python
 RUN apt-get update && apt-get install -y python python3.5 python-dev python3-pip python-pip python-pkg-resources python3-pkg-resources
 RUN pip install --upgrade pip && pip3 install  websocket_client psutil requests redis
