@@ -90,6 +90,7 @@ class JudgeService:
         result = {}
         status = ret = ResultCode.Accepted
         user_output_content = read_file_content(user_output_path)
+        user_output_content = user_output_content.rstrip()
         user_output_size = len(user_output_content)
         user_output_sha256,user_stripped_output_sha256 = _generate_output_sha256(user_output_content)
         if not self._is_spj and run_result["result"] == JudgeResult.SUCCESS:
