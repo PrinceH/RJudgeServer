@@ -43,12 +43,12 @@ class JudgeService:
     def __init__(self, language_config, test_case_id, submission_id, src, max_cpu_time, max_memory,is_spj = False):
         self._src = src
         self._max_cpu_time = max_cpu_time
-        self._test_case_id = test_case_id
-        self._submission_id = submission_id
+        self._test_case_id = str(test_case_id)
+        self._submission_id = str(submission_id)
         self._test_case_path = os.path.join(os.getcwd(), "test_cases")
         self._submission_path = os.path.join(os.getcwd(), "submissions")
-        self._submission_id_path = os.path.join(self._submission_path, submission_id)
-        self._test_case_id_path = os.path.join(self._test_case_path, test_case_id)
+        self._submission_id_path = os.path.join(self._submission_path, self._submission_id)
+        self._test_case_id_path = os.path.join(self._test_case_path, self._test_case_id)
         self._language_config = language_config
         self._max_memory = max_memory
         self._is_spj = is_spj
@@ -67,7 +67,7 @@ class JudgeService:
         info = {"test_cases": {}}
         index = 0
         for input_file in glob.glob(os.path.join(self._test_case_id_path, "*.in")):
-            output_file = input_file.replace("in", "out")
+            output_file = input_file.replace(".in", ".out")
             if not os.path.exists(output_file):
                 raise JudgeServiceException(message="[ERROR] Missing test samples")
             input_content = read_file_content(path=input_file)
@@ -136,7 +136,7 @@ class JudgeService:
         user_output_path = os.path.join(self._submission_path, self._submission_id, test_case_info["output_name"])
         expected_output_content = read_file_content(output_path)
         expected_output_size = len(expected_output_content)
-        max_output_size = int(expected_output_size * 2)
+        max_output_size = max(int(expected_output_size * 3.5), 5242880)
         run_result = _judger.run(
             exe_path=self._command[0],
             input_path=input_path,
@@ -165,7 +165,7 @@ class JudgeService:
         zip_path = os.path.join(self._test_case_path, self._test_case_id) + ".zip"
         if os.path.exists(zip_path):
             os.remove(zip_path)
-        r = requests.get(url="http://{}/download/test_cases/{}".format(os.getenv("SERVER_URL"),self._test_case_id))
+        r = requests.get(url="http://nwanna.cn/api/test_cases/{}/download".format(self._test_case_id))
         if r.status_code == 200:
             with open(zip_path, "wb") as file:
                 file.write(r.content)
@@ -185,7 +185,7 @@ class JudgeService:
         if not os.path.exists(self._test_case_id_path):
             self._download_latest_test_case()
         try:
-            res = json.loads(requests.get(url="http://{}/test_cases/{}".format(os.getenv("SERVER_URL"),self._test_case_id)).text)
+            res = json.loads(requests.get(url="http://nwanna.cn/api/test_cases/{}".format(self._test_case_id)).text)
         except requests.RequestException as e:
             raise JudgeServiceException("GetRemoteTestCaseInfoFailed",e.__str__())
         latest_time = res["updated_at"]

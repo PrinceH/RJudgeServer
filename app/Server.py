@@ -1,25 +1,28 @@
 # -*- coding:utf-8 -*-
 import psutil
 import websocket
-import redis
 import json
 import socket
 import os
 import time
-
+from queue import Queue
 from JudgeService import JudgeService
-re = redis.Redis(host='redis', port=6379, db=1,password="admin123")
-queue_name = "{}_judge".format(socket.gethostname())
+Q = Queue(maxsize=0)
+token = "aff4edbc858b4577974b3efab618bce1"
+name = "xoq9iHLaI1EqWkC"
+vis = {}
 try:
     import thread
 except ImportError:
     import _thread as thread
 def on_message(ws, message):
-    global re
+    global Q
     data = json.loads(message)
     if data["type"] == "judge":
         print("{} There are new submissions".format(data["submission_id"]))
-        re.lpush(queue_name,json.dumps(data))
+        if not vis.get(data["submission_id"],False):
+            vis[data["submission_id"]] = True
+            Q.put(json.dumps(data))
 def on_error(ws, error):
     print(error)
 
@@ -29,11 +32,11 @@ def on_close(ws):
 
 def on_open(ws):
     def run(*args):
-        global re
-        time.sleep(1)
+        global Q
         while True:
-            if re.llen(queue_name) > 0:
-                data = json.loads(re.rpop(queue_name).decode())
+            if not Q.empty():
+                print("task!!!!\r\n")
+                data = json.loads(Q.get())
                 judger = JudgeService(
                     language_config=data["language_config"],
                     test_case_id=data["test_case_id"],
@@ -43,28 +46,41 @@ def on_open(ws):
                     max_cpu_time=data["max_cpu_time"],
                     is_spj=data['is_spj']
                 )
-                ws.send(json.dumps({'type':'judging','hostname': socket.gethostname(), 'judge_status_id': data['judge_status_id']}))
-                result = {'type': "judged", 'judge_status_id': data['judge_status_id'], 'judge_info': judger._run(),'hostname': socket.gethostname()}
+                ws.send(json.dumps({
+                    "name": name,
+                    'token':token,
+                    'type':'judging',
+                    'judge_status_id': data['judge_status_id']
+                    }))
+                result = {
+                    "name":name,
+                    'token':token,
+                    'type': "judged", 
+                    'judge_status_id': data['judge_status_id'], 
+                    'judge_info': judger._run()
+                    }
+                vis[data['judge_status_id']] = False
                 print('send')
+                print(len(json.dumps(result)))
                 ws.send(json.dumps(result))
-            if re.llen(queue_name) == 0:
-                time.sleep(1)
-
     def heartbeat(*args):
         m = psutil.virtual_memory()
         while True:
-            body = {"type":"heartbeat","hostname":socket.gethostname(),"token":"12345","task_number":re.llen("judge"),"cpu_usage":psutil.cpu_percent(interval=1),"memory_usage":m.percent,"cpu_core":psutil.cpu_count()}
+            body = {
+                "type":"heartbeat",
+                "name":name,
+                'token':token,
+                "task_number":Q.qsize(),
+                "cpu_usage":psutil.cpu_percent(interval=1),
+                "memory_usage":m.percent,
+                "cpu_core":psutil.cpu_count()}
             ws.send(json.dumps(body))
-            time.sleep(5)
+            time.sleep(40)
     thread.start_new_thread(run, ())
     thread.start_new_thread(heartbeat,())
 
 if __name__ == "__main__":
-    # websocket.enableTrace(True)
-    print(psutil.cpu_count())
-    print(os.getenv("WEB_SOCKET_URL"))
-    print(os.getenv("SERVER_URL"))
-    ws = websocket.WebSocketApp("{}".format(os.getenv("WEB_SOCKET_URL")),
+    ws = websocket.WebSocketApp("ws://echo.nwanna.cn",
                               on_message = on_message,
                               on_error = on_error,
                               on_close = on_close)
