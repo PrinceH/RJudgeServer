@@ -8,8 +8,9 @@ import time
 from queue import Queue
 from JudgeService import JudgeService
 Q = Queue(maxsize=0)
-token = "aff4edbc858b4577974b3efab618bce1"
-name = "xoq9iHLaI1EqWkC"
+token = os.environ.get("TOKEN")
+name = os.environ.get("NAME")
+print(token,name)
 vis = {}
 try:
     import thread
@@ -80,7 +81,8 @@ def on_open(ws):
     thread.start_new_thread(heartbeat,())
 
 if __name__ == "__main__":
-    ws = websocket.WebSocketApp("ws://echo.nwanna.cn",
+    print(os.environ.get("WEB_SOCKET_URL"))
+    ws = websocket.WebSocketApp(os.environ.get("WEB_SOCKET_URL"),
                               on_message = on_message,
                               on_error = on_error,
                               on_close = on_close)

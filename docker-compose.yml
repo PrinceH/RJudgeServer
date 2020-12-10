@@ -1,27 +1,17 @@
 version: "3"
 services:
-    redis:
-        image: 'redis:5.0.3'
-        restart: always
-        hostname: redis1
-        container_name: redis1
-        command: redis-server /usr/local/etc/redis/redis.conf
-        volumes:
-            - ./redis_config/redis.conf:/usr/local/etc/redis/redis.conf
-            - ./redis_data/:/data/
     judge_server2:
         image: hwz634473223/judge_server:local
         restart: always
-        depends_on:
-          - redis
         tmpfs:
             - /tmp
         volumes: 
             - ./:/RJudgeServer/
         environment:
-            - WEB_SOCKET_URL=ws://172.17.0.1:9502/websocket/judge
-            - TOKEN=12345
-            - SERVER_URL=172.17.0.1:9501
+            - WEB_SOCKET_URL=ws://echo.nwanna.cn
+            - TOKEN=aff4edbc858b4577974b3efab618bce1
+            - NAME=xoq9iHLaI1EqWkC
+            - SERVER_URL=nwanna.cn
         working_dir: "/RJudgeServer"
-        # entrypoint: ["python3","app/Server.py"]
+        entrypoint: ["python3","app/Server.py"]
         tty: true

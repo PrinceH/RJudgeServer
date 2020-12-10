@@ -13,6 +13,7 @@ import requests
 import zipfile
 from Constants.ResultCode import ResultCode
 from Constants.JudgeResult import JudgeResult
+SERVER_URL = os.environ.get("SERVER_URL")
 class JudgeServiceException(Exception):
     def __init__(self, message,reason=""):
         super().__init__()
@@ -165,7 +166,7 @@ class JudgeService:
         zip_path = os.path.join(self._test_case_path, self._test_case_id) + ".zip"
         if os.path.exists(zip_path):
             os.remove(zip_path)
-        r = requests.get(url="http://nwanna.cn/api/test_cases/{}/download".format(self._test_case_id))
+        r = requests.get(url="http://{}/api/test_cases/{}/download".format(SERVER_URL,self._test_case_id))
         if r.status_code == 200:
             with open(zip_path, "wb") as file:
                 file.write(r.content)
@@ -185,7 +186,7 @@ class JudgeService:
         if not os.path.exists(self._test_case_id_path):
             self._download_latest_test_case()
         try:
-            res = json.loads(requests.get(url="http://nwanna.cn/api/test_cases/{}".format(self._test_case_id)).text)
+            res = json.loads(requests.get(url="http://{}/api/test_cases/{}".format(SERVER_URL,self._test_case_id)).text)
         except requests.RequestException as e:
             raise JudgeServiceException("GetRemoteTestCaseInfoFailed",e.__str__())
         latest_time = res["updated_at"]
