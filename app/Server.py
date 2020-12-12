@@ -51,19 +51,26 @@ def on_open(ws):
                     "name": name,
                     'token':token,
                     'type':'judging',
-                    'judge_status_id': data['judge_status_id']
+                    'judge_status_id': data['judge_status_id'],
+                    "task_number":Q.qsize()
                     }))
-                result = {
-                    "name":name,
-                    'token':token,
-                    'type': "judged", 
-                    'judge_status_id': data['judge_status_id'], 
-                    'judge_info': judger._run()
-                    }
-                vis[data['judge_status_id']] = False
-                print('send')
-                print(len(json.dumps(result)))
-                ws.send(json.dumps(result))
+                try:
+                    result = {
+                        "name":name,
+                        'token':token,
+                        'type': "judged", 
+                        'judge_status_id': data['judge_status_id'], 
+                        'judge_info': judger._run(),
+                        "task_number":Q.qsize()
+                        }
+                    vis[data['judge_status_id']] = False
+                    print('send')
+                    print(len(json.dumps(result)))
+                    ws.send(json.dumps(result))
+                except:
+                    pass
+            else:
+                time.sleep(1)
     def heartbeat(*args):
         m = psutil.virtual_memory()
         while True:
@@ -76,7 +83,7 @@ def on_open(ws):
                 "memory_usage":m.percent,
                 "cpu_core":psutil.cpu_count()}
             ws.send(json.dumps(body))
-            time.sleep(40)
+            time.sleep(5)
     thread.start_new_thread(run, ())
     thread.start_new_thread(heartbeat,())
 

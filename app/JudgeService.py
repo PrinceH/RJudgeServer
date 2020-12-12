@@ -25,7 +25,7 @@ class JudgeServiceException(Exception):
 
 
 def read_file_content(path):
-    with open(path) as file:
+    with open(path,'r',encoding='utf-8', errors="ignore") as file:
         return file.read()
 
 

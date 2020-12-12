@@ -9,9 +9,9 @@ services:
             - ./:/RJudgeServer/
         environment:
             - WEB_SOCKET_URL=ws://echo.nwanna.cn
-            - TOKEN=aff4edbc858b4577974b3efab618bce1
-            - NAME=xoq9iHLaI1EqWkC
+            - TOKEN=bf40718424b279059532d5bb2df67e64
+            - NAME=HSYik8JESjHc5ZC
             - SERVER_URL=nwanna.cn
         working_dir: "/RJudgeServer"
-        entrypoint: ["python3","app/Server.py"]
+        # entrypoint: ["python3","app/Server.py"]
         tty: true
