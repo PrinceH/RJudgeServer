@@ -146,7 +146,7 @@ class JudgeService:
             max_cpu_time=self._max_cpu_time,
             max_real_time=self._max_cpu_time*60,
             max_memory=self._max_memory,
-            args=self._command[1::], env=[], log_path=os.path.join(os.getcwd(), "judge.log"),
+            args=self._command[1::], env=self._language_config["run"]["env"], log_path=os.path.join(os.getcwd(), "judge.log"),
             max_process_number=-1,
             max_stack=32 * 1024 * 1024,
             max_output_size=max_output_size,

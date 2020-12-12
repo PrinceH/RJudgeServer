@@ -8,10 +8,10 @@ services:
         volumes: 
             - ./:/RJudgeServer/
         environment:
-            - WEB_SOCKET_URL=ws://echo.nwanna.cn
-            - TOKEN=bf40718424b279059532d5bb2df67e64
-            - NAME=HSYik8JESjHc5ZC
-            - SERVER_URL=nwanna.cn
+            - WEB_SOCKET_URL=ws://homestead.test:1215
+            - TOKEN=5b4bc9dc841e373db33348efd266868b
+            - NAME=GeHOjRluUMKSYOk
+            - SERVER_URL=homestead.test:1215
         working_dir: "/RJudgeServer"
         # entrypoint: ["python3","app/Server.py"]
         tty: true
