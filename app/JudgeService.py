@@ -11,6 +11,7 @@ from Compiler import Compiler
 from Compiler import CompilerException
 import requests
 import zipfile
+import sys
 from Constants.ResultCode import ResultCode
 from Constants.JudgeResult import JudgeResult
 SERVER_URL = os.environ.get("SERVER_URL")
@@ -55,7 +56,7 @@ class JudgeService:
         self._is_spj = is_spj
         self._spj_path = os.path.join(self._test_case_id_path,'spj.cpp')
         self._exe_path = os.path.join(self._submission_id_path, self._language_config["compile"]["exe_name"])
-        self._pool = Pool(processes=psutil.cpu_count())
+        self._pool = Pool(processes=psutil.cpu_count() * 2)
         self._command = self._language_config["run"]["command"].format(exe_path=self._exe_path,
                                                                        exe_dir=os.path.dirname(self._exe_path),
                                                                        max_memory=int(self._max_memory / 1024)).split(" ")
@@ -92,7 +93,8 @@ class JudgeService:
         status = ret = ResultCode.Accepted
         user_output_content = read_file_content(user_output_path)
         user_output_content = user_output_content.rstrip()
-        user_output_size = len(user_output_content)
+        user_output_size = sys.getsizeof(user_output_content)
+        print("u: ",user_output_size)
         user_output_sha256,user_stripped_output_sha256 = _generate_output_sha256(user_output_content)
         if not self._is_spj and run_result["result"] == JudgeResult.SUCCESS:
             if user_output_sha256 != test_case_info["output_sha256"] and user_stripped_output_sha256 != test_case_info["stripped_output_sha256"]:
@@ -136,8 +138,9 @@ class JudgeService:
         output_path = os.path.join(self._test_case_id_path, test_case_info["output_name"])
         user_output_path = os.path.join(self._submission_path, self._submission_id, test_case_info["output_name"])
         expected_output_content = read_file_content(output_path)
-        expected_output_size = len(expected_output_content)
-        max_output_size = max(int(expected_output_size * 3.5), 5242880)
+        expected_output_size = sys.getsizeof(expected_output_content)
+        print("e: ",expected_output_size)
+        max_output_size = max(int(expected_output_size * 2), 4 * 1024 * 1024)
         run_result = _judger.run(
             exe_path=self._command[0],
             input_path=input_path,
