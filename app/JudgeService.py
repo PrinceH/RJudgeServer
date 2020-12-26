@@ -55,7 +55,7 @@ class JudgeService:
         self._is_spj = is_spj
         self._spj_path = os.path.join(self._test_case_id_path,'spj.cpp')
         self._exe_path = os.path.join(self._submission_id_path, self._language_config["compile"]["exe_name"])
-        self._pool = Pool(processes=psutil.cpu_count())
+        self._pool = Pool(min(processes=psutil.cpu_count(),4))
         self._command = self._language_config["run"]["command"].format(exe_path=self._exe_path,
                                                                        exe_dir=os.path.dirname(self._exe_path),
                                                                        max_memory=int(self._max_memory / 1024)).split(" ")

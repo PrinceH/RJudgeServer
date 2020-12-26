@@ -41,7 +41,7 @@ class Compiler:
             error_content = error.read()
             error_content = error_content.replace(self._submission_id_path, "")
         if code:
-            raise CompilerException("Compile error", error_content)
+            raise CompilerException("Compile error", error_content[0:800])
 
 
 if __name__ == "__main__":
