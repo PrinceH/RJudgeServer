@@ -31,9 +31,8 @@ def read_file_content(path):
 
 
 def _generate_output_sha256(output_content):
-    output_content = output_content.rstrip()
     stripped_output_content = output_content.replace("\n", "").replace(" ", "")
-    return hashlib.sha256(output_content.rstrip().encode("utf-8")).hexdigest(), hashlib.sha256(
+    return hashlib.sha256(output_content.encode("utf-8")).hexdigest(), hashlib.sha256(
         stripped_output_content.encode("utf-8")).hexdigest()
 
 
@@ -56,7 +55,7 @@ class JudgeService:
         self._is_spj = is_spj
         self._spj_path = os.path.join(self._test_case_id_path,'spj.cpp')
         self._exe_path = os.path.join(self._submission_id_path, self._language_config["compile"]["exe_name"])
-        self._pool = Pool(processes=psutil.cpu_count() * 2)
+        self._pool = Pool(processes=psutil.cpu_count())
         self._command = self._language_config["run"]["command"].format(exe_path=self._exe_path,
                                                                        exe_dir=os.path.dirname(self._exe_path),
                                                                        max_memory=int(self._max_memory / 1024)).split(" ")
@@ -92,9 +91,8 @@ class JudgeService:
         result = {}
         status = ret = ResultCode.Accepted
         user_output_content = read_file_content(user_output_path)
-        user_output_content = user_output_content.rstrip()
+        user_output_content = user_output_content
         user_output_size = sys.getsizeof(user_output_content)
-        print("u: ",user_output_size)
         user_output_sha256,user_stripped_output_sha256 = _generate_output_sha256(user_output_content)
         if not self._is_spj and run_result["result"] == JudgeResult.SUCCESS:
             if user_output_sha256 != test_case_info["output_sha256"] and user_stripped_output_sha256 != test_case_info["stripped_output_sha256"]:
@@ -139,8 +137,7 @@ class JudgeService:
         user_output_path = os.path.join(self._submission_path, self._submission_id, test_case_info["output_name"])
         expected_output_content = read_file_content(output_path)
         expected_output_size = sys.getsizeof(expected_output_content)
-        print("e: ",expected_output_size)
-        max_output_size = max(int(expected_output_size * 2), 4 * 1024 * 1024)
+        max_output_size = max(int(expected_output_size * 2.5), int(16 * 1024 * 1024))
         run_result = _judger.run(
             exe_path=self._command[0],
             input_path=input_path,

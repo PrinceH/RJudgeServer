@@ -1,5 +1,20 @@
-version: "3"
+version: "2"
 services:
+    judge_server1:
+        image: hwz634473223/judge_server:local
+        restart: always
+        tmpfs:
+            - /tmp
+        volumes: 
+            - ./:/RJudgeServer/
+        environment:
+            - WEB_SOCKET_URL=ws://172.17.0.1:1215
+            - TOKEN=40780e9dc22544105ebb9bd74e71d4a4
+            - NAME=2QssCtKQCGqxL4V
+            - SERVER_URL=172.17.0.1:1215
+        working_dir: "/RJudgeServer"
+        entrypoint: ["python3","app/Server.py"]
+        tty: true
     judge_server2:
         image: hwz634473223/judge_server:local
         restart: always
@@ -8,10 +23,11 @@ services:
         volumes: 
             - ./:/RJudgeServer/
         environment:
-            - WEB_SOCKET_URL=ws://homestead.test:1215
-            - TOKEN=5b4bc9dc841e373db33348efd266868b
-            - NAME=GeHOjRluUMKSYOk
-            - SERVER_URL=homestead.test:1215
+            - WEB_SOCKET_URL=ws://172.17.0.1:1215
+            - TOKEN=40780e9dc22544105ebb9bd74e71d4a4
+            - NAME=2QssCtKQCGqxL4V
+            - SERVER_URL=172.17.0.1:1215
         working_dir: "/RJudgeServer"
-        # entrypoint: ["python3","app/Server.py"]
+        entrypoint: ["python3","app/Server.py"]
         tty: true
+    
